@@ -1,0 +1,184 @@
+---
+- name: Install
+  hosts: 1.2.3.4
+  become: yes
+  vars:
+
+    - domain: domain.com
+    - id: abc-def-123-456
+    - key: ABCDEFGHIJK1234567891011
+
+  tasks:
+
+    - apt:
+        name: python-pexpect
+        state: latest
+
+    - stat:
+        path: /tmp/install.sh
+      register: stat_result
+
+    - get_url:
+        url: downloadlink.com
+        dest: /tmp
+      when: not stat_result.stat.exists
+
+    - file:
+        path: /tmp/install.sh
+        mode: u+x
+
+    - expect:
+        command: script --command "/tmp/install.sh legacy"
+        responses:
+          'Install *** \(y/n\)\?' : 'y'
+          '\* Use automatic configuration\? Y or N \(Y\):' : 'Y'
+          'Press enter to continue...' : ''
+          'Your choice \(1..9\):' : '8'
+        timeout: 1800
+
+    - fetch:
+        src: typescript
+        dest: /tmp/lucy_install
+
+    - file:
+        path: '{{ item }}'
+        state: absent
+      loop:
+        - 'typescript'
+        - '/tmp/install.sh'
+
+    - name: edit /etc/hosts
+      lineinfile:
+        path: /etc/hosts
+        insertafter: EOF
+        line: "{{ ansible_default_ipv4.address }} mail.{{ domain }} mail"
+        state: present
+
+    - name: edit /etc/hostname
+      hostname:
+        name: "mail"
+        use: systemd
+
+    - name: edit /etc/mailname
+      lineinfile:
+        path: /etc/mailname
+        line: "mail.{{ domain }}"
+        create: yes
+
+    - shell:
+        cmd: |
+          cat > /etc/network/if-up.d/00-iptables<<EOF
+          #!/bin/sh
+          iptables-restore < /.../.../.../iptables.conf
+          EOF
+
+    - iptables:
+        chain: INPUT
+        source: 1.2.3.4
+        protocol: tcp
+        destination_port: 10050
+        jump: ACCEPT
+        action: insert
+        rule_num: 3
+
+    - iptables:
+        chain: INPUT
+        source: 1.2.3.4
+        protocol: tcp
+        match: tcp
+        destination_port: 22
+        jump: ACCEPT
+        action: insert
+        rule_num: 4
+
+    - iptables:
+        chain: INPUT
+        source: 1.2.3.4
+        protocol: tcp
+        match: tcp
+        destination_port: 22
+        jump: ACCEPT
+        action: insert
+        rule_num: 5
+
+    - iptables:
+        chain: INPUT
+        source: 1.2.3.4
+        protocol: tcp
+        match: tcp
+        destination_port: 22
+        jump: ACCEPT
+        action: insert
+        rule_num: 6
+
+    - iptables:
+        chain: INPUT
+        source: 1.2.3.4
+        protocol: tcp
+        match: tcp
+        destination_port: 22
+        jump: ACCEPT
+        action: insert
+        rule_num: 7
+
+    - iptables:
+        chain: INPUT
+        source: 1.2.3.4
+        protocol: tcp
+        match: tcp
+        destination_port: 22
+        jump: ACCEPT
+        action: insert
+        rule_num: 8
+
+    - community.general.iptables_state:
+        state: saved
+        path: /.../.../.../iptables.conf
+
+    - lineinfile:
+        path: /.../.../.../iptables.conf
+        regexp: '^-A INPUT -p tcp -m multiport'
+        line: "-A INPUT -p tcp -m multiport --dports 25,80,443,5001 -j ACCEPT"
+
+    - community.general.iptables_state:
+        state: restored
+        path: /.../.../.../iptables.conf
+
+    - command: /.../.../.../yiic checkupdate
+      timeout: 300
+
+    - name: Encrypt Workstation ID
+      command: /.../.../.../yiic encrypt '{{ id }}'
+      register: encrypted_id
+
+    - name: Encrypt Workstation Key
+      command: /.../.../.../yiic encrypt '{{ key }}'
+      register: encrypted_key
+
+    - name: Set ID in Database
+      expect:
+        command: sudo -u postgres psql user
+        responses:
+          'user=# ' : "update system set value='{{ encrypted_id.stdout }}' where name='id';"
+      ignore_errors: yes
+      timeout: 3
+
+    - name: Set Key in Database
+      expect:
+        command: sudo -u postgres psql user
+        responses:
+          'user=# ' : "update system set value='{{ encrypted_key.stdout }}' where name='key';"
+      ignore_errors: yes
+      timeout: 3
+
+    - name: Check Update after setting ID and Key
+      command: /.../.../.../yiic checkupdate skip_delay
+
+    - name: Set domain
+      expect:
+        command: python /.../.../.../setup.py
+        responses:
+          'Your choice \(1..9\):' : '5'
+          '\* Domain \(phish.local\):' : 'access.{{ domain }}'
+      ignore_errors: yes
+      timeout: 3
